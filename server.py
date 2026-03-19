@@ -232,6 +232,14 @@ def describe_table(table_name: str) -> str:
 
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 8000))
+
+    # Add health endpoint for Railway healthcheck
+    from starlette.responses import JSONResponse
+
+    @mcp._app.get("/health")
+    async def health():
+        return JSONResponse({"status": "ok", "service": "verdian-crm-mcp"})
+
     mcp.run(
         transport="streamable-http",
         host="0.0.0.0",
