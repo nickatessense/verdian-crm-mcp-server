@@ -232,25 +232,21 @@ def describe_table(table_name: str) -> str:
 
 if __name__ == "__main__":
     import uvicorn
-    from starlette.applications import Starlette
     from starlette.responses import JSONResponse
-    from starlette.routing import Route, Mount
 
     port = int(os.environ.get('PORT', 8000))
 
-    # Health endpoint for Railway
-    async def health(request):
-        return JSONResponse({"status": "ok", "service": "verdian-crm-mcp"})
+    # Get the MCP ASGI app (serves on /mcp/)
+    app = mcp.http_app()
 
-    # Get the MCP ASGI app
-    mcp_app = mcp.http_app()
+    # Add health endpoint directly to the underlying Starlette app
+    original_app = app
 
-    # Combine health + MCP into one Starlette app
-    app = Starlette(
-        routes=[
-            Route("/health", health),
-            Mount("/", app=mcp_app),
-        ]
-    )
+    async def wrapped_app(scope, receive, send):
+        if scope["type"] == "http" and scope["path"] == "/health":
+            response = JSONResponse({"status": "ok", "service": "verdian-crm-mcp"})
+            await response(scope, receive, send)
+        else:
+            await original_app(scope, receive, send)
 
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    uvicorn.run(wrapped_app, host="0.0.0.0", port=port)
