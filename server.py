@@ -231,17 +231,26 @@ def describe_table(table_name: str) -> str:
 
 
 if __name__ == "__main__":
+    import uvicorn
+    from starlette.applications import Starlette
+    from starlette.responses import JSONResponse
+    from starlette.routing import Route, Mount
+
     port = int(os.environ.get('PORT', 8000))
 
-    # Add health endpoint for Railway healthcheck
-    from starlette.responses import JSONResponse
-
-    @mcp._app.get("/health")
-    async def health():
+    # Health endpoint for Railway
+    async def health(request):
         return JSONResponse({"status": "ok", "service": "verdian-crm-mcp"})
 
-    mcp.run(
-        transport="streamable-http",
-        host="0.0.0.0",
-        port=port,
+    # Get the MCP ASGI app
+    mcp_app = mcp.http_app()
+
+    # Combine health + MCP into one Starlette app
+    app = Starlette(
+        routes=[
+            Route("/health", health),
+            Mount("/", app=mcp_app),
+        ]
     )
+
+    uvicorn.run(app, host="0.0.0.0", port=port)
