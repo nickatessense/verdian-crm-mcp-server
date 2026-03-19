@@ -58,6 +58,14 @@ This database contains data migrated from Abacus ADvance CRM for Compliance Week
 - self_service_admins (2,196 rows): Corporate account admin assignments.
   - company_party_id, company_name, admin_party_id, admin_name, order_id, record_status
 
+- customer_diary (456,512 rows): Subscription lifecycle audit trail.
+  - party_id, event_date, event_type, item, actioned_by, product_name
+  - Key event types: Corporate subscription activated, Party removed from corporate subscription,
+    Corporate subscription, Personal subscription, Order status changed,
+    Order flagged as do not allow payment/renew, Newsletter registration/cancellation,
+    Form completed, Refund, Order extension, Party merged, Credit Card Updated
+  - The "item" field contains details like order numbers and who performed the action
+
 - salesforce_opportunities_report (468 rows): Salesforce integration data.
   - Salesforce opportunity and contact data for renewal tracking
 
@@ -81,6 +89,9 @@ This database contains data migrated from Abacus ADvance CRM for Compliance Week
 - Live subscribers: WHERE subscription_status = 'Live'
 - Companies only: WHERE people_party_id IS NULL
 - People only: WHERE people_party_id IS NOT NULL
+- Diary for a person: SELECT * FROM customer_diary WHERE party_id = X ORDER BY event_date DESC
+- Why was someone removed: SELECT * FROM customer_diary WHERE party_id = X AND event_type LIKE '%removed%'
+- Corporate additions/removals for an order: SELECT * FROM customer_diary WHERE item LIKE '%#0000007263%' AND event_type IN ('Corporate subscription activated', 'Party removed from corporate subscription')
 """
 )
 
