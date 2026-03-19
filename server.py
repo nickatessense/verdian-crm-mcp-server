@@ -66,9 +66,6 @@ This database contains data migrated from Abacus ADvance CRM for Compliance Week
     Form completed, Refund, Order extension, Party merged, Credit Card Updated
   - The "item" field contains details like order numbers and who performed the action
 
-- salesforce_opportunities_report (468 rows): Salesforce integration data.
-  - Salesforce opportunity and contact data for renewal tracking
-
 ## Key Business Rules
 - party_id represents BOTH people and companies (universal identifier)
 - To check if person or company: people_party_id IS NOT NULL = person, IS NULL = company
@@ -108,7 +105,7 @@ def run_sql(query: str) -> str:
 
     Only SELECT queries are allowed. The database contains contacts, subscriptions,
     engagement, web_registrations, newsletter_subscriptions, custom_attributes,
-    self_service_admins, and salesforce_opportunities_report tables.
+    self_service_admins, and customer_diary tables.
 
     Args:
         query: SQL SELECT query to execute. Must be read-only.
