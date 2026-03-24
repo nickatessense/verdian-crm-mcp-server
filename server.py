@@ -66,6 +66,14 @@ This database contains data migrated from Abacus ADvance CRM for Compliance Week
     Form completed, Refund, Order extension, Party merged, Credit Card Updated
   - The "item" field contains details like order numbers and who performed the action
 
+- web_activity (1,063,652 rows): Web activity events per person.
+  - party_id, event_datetime (TIMESTAMP), item_title, item_type, action
+  - Actions: View Story (478K — articles read), View Page (500K — pages visited), Access Denied (67K — paywall hits), Download (18K)
+  - View Story available from 2020 onwards only (not tracked before 2020)
+  - View Page available from 2022 onwards only (not tracked before 2022)
+  - Access Denied and Download available from 2019 onwards
+  - Login and Access Granted actions NOT imported (Login = noise/auto-logins, Access Granted = duplicate of View Story)
+
 ## Key Business Rules
 - party_id represents BOTH people and companies (universal identifier)
 - To check if person or company: people_party_id IS NOT NULL = person, IS NULL = company
@@ -89,6 +97,9 @@ This database contains data migrated from Abacus ADvance CRM for Compliance Week
 - Diary for a person: SELECT * FROM customer_diary WHERE party_id = X ORDER BY event_date DESC
 - Why was someone removed: SELECT * FROM customer_diary WHERE party_id = X AND event_type LIKE '%removed%'
 - Corporate additions/removals for an order: SELECT * FROM customer_diary WHERE item LIKE '%#0000007263%' AND event_type IN ('Corporate subscription activated', 'Party removed from corporate subscription')
+- What articles did a person read: SELECT event_datetime, item_title FROM web_activity WHERE party_id = X AND action = 'View Story' ORDER BY event_datetime DESC LIMIT 50
+- What content was someone denied: SELECT event_datetime, item_title FROM web_activity WHERE party_id = X AND action = 'Access Denied' ORDER BY event_datetime DESC
+- Most read articles: SELECT item_title, COUNT(*) FROM web_activity WHERE action = 'View Story' GROUP BY item_title ORDER BY COUNT(*) DESC LIMIT 20
 """
 )
 
@@ -105,7 +116,7 @@ def run_sql(query: str) -> str:
 
     Only SELECT queries are allowed. The database contains contacts, subscriptions,
     engagement, web_registrations, newsletter_subscriptions, custom_attributes,
-    self_service_admins, and customer_diary tables.
+    self_service_admins, customer_diary, and web_activity tables.
 
     Args:
         query: SQL SELECT query to execute. Must be read-only.
