@@ -74,6 +74,15 @@ This database contains data migrated from Abacus ADvance CRM for Compliance Week
   - Access Denied and Download available from 2019 onwards
   - Login and Access Granted actions NOT imported (Login = noise/auto-logins, Access Granted = duplicate of View Story)
 
+- css_invitations (17,614 rows): Corporate Self-Service invitation history.
+  - date_sent, order_id, party_id (null for TEMP PARTY), name, email, company_party_id, company_name, activation_type
+  - Activation types: "Unknown invitee (TEMP PARTY)" = invited but never created account,
+    "Invitee on system (PARTY/PERSON)" = exists in system but not confirmed,
+    "MM/DD/YYYY Confirmed" = accepted invitation on that date
+  - Same person can appear multiple times across orders (invitation history through renewals)
+  - Use this + subscriptions to get FULL picture: subscriptions = active recipients, css_invitations = invited but not yet active
+  - TEMP PARTY invitees have NO party_id — only name and email
+
 ## Key Business Rules
 - party_id represents BOTH people and companies (universal identifier)
 - To check if person or company: people_party_id IS NOT NULL = person, IS NULL = company
@@ -100,6 +109,8 @@ This database contains data migrated from Abacus ADvance CRM for Compliance Week
 - What articles did a person read: SELECT event_datetime, item_title FROM web_activity WHERE party_id = X AND action = 'View Story' ORDER BY event_datetime DESC LIMIT 50
 - What content was someone denied: SELECT event_datetime, item_title FROM web_activity WHERE party_id = X AND action = 'Access Denied' ORDER BY event_datetime DESC
 - Most read articles: SELECT item_title, COUNT(*) FROM web_activity WHERE action = 'View Story' GROUP BY item_title ORDER BY COUNT(*) DESC LIMIT 20
+- ALL users for a corporate order (active + invited): SELECT name, email, activation_type FROM css_invitations WHERE order_id = X UNION ALL SELECT c.first_name || ' ' || c.surname, c.email, 'Active Subscriber' FROM subscriptions s JOIN contacts c ON s.party_id = c.party_id WHERE s.order_id = X AND c.people_party_id IS NOT NULL
+- Ghost invitees for a company: SELECT * FROM css_invitations WHERE company_name ILIKE '%name%' AND activation_type = 'Unknown invitee (TEMP PARTY)'
 """
 )
 
@@ -116,7 +127,7 @@ def run_sql(query: str) -> str:
 
     Only SELECT queries are allowed. The database contains contacts, subscriptions,
     engagement, web_registrations, newsletter_subscriptions, custom_attributes,
-    self_service_admins, customer_diary, and web_activity tables.
+    self_service_admins, customer_diary, web_activity, and css_invitations tables.
 
     Args:
         query: SQL SELECT query to execute. Must be read-only.
